@@ -1,0 +1,25 @@
+[DEFAULT]
+bantime  = 3600
+
+sendername = Fail2Ban
+sender = fail2ban@mydomain.com
+destemail = alerts@mydomain.com
+
+[sshd]
+enabled  = true
+action = %(action_mw)s
+
+[postfix]
+enabled  = true
+logpath  = /var/log/mail.log
+backend = systemd
+maxretry = 6
+bantime = 300
+action = %(action_mw)s
+
+[postfix-sasl]
+enabled  = true
+logpath  = /var/log/mail.log
+backend = systemd
+maxretry  = 3
+action = %(action_mw)s
