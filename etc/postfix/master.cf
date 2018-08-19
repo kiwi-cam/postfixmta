@@ -139,4 +139,8 @@ scan unix - - n - 16 smtp
 # SPAM Assassin
 #
 spamassassin    unix    -       n       n       -       -       pipe
-  flags=R user=spamd argv=/usr/bin/spamc -e /usr/sbin/sendmail -oi -f ${sender} ${recipient}
+  flags=R
+  user=spamd
+  argv=/usr/bin/spamc
+  -e /usr/sbin/sendmail
+  -oi -f ${sender} ${recipient}
