@@ -9,7 +9,7 @@ destemail = alerts@mydomain.com
 enabled  = true
 action = %(action_mw)s
 
-#If you have issues with postfax jails not being detected, try adding "backend = systemd" 
+#If you have issues with postfix jails not being detected, try adding "backend = systemd" 
 [postfix]
 enabled  = true
 logpath  = /var/log/mail.log
