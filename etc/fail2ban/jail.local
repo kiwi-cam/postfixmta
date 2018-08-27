@@ -7,13 +7,23 @@ destemail = alerts@mydomain.com
 
 [sshd]
 enabled  = true
+maxretry = 3
 action = %(action_mw)s
 
-#If you have issues with postfix jails not being detected, try adding "backend = systemd" 
 [postfix]
 enabled  = true
 logpath  = /var/log/mail.log
-maxretry = 6
+maxretry = 5
+action = %(action_mw)s
+
+[postfix-longterm]
+# Long term scanning for postfix 35 failed attempts in 3 days.
+enabled  = true
+filter   = postfix
+logpath  = /var/log/mail.log
+maxretry = 35
+findtime  = 259200
+bantime   = 259200
 action = %(action_mw)s
 
 [postfix-sasl]
