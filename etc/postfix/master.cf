@@ -10,19 +10,24 @@
 #               (yes)   (yes)   (no)    (never) (100)
 # ==========================================================================
 smtp      inet  n       -       y       -       -       smtpd
-  -o content_filter=spamassassin
+#  -o content_filter=smtp-amavis:[127.0.0.1]:10024
+#  -o receive_override_options=no_milters
+#  -o content_filter=spamassassin
 #smtp      inet  n       -       y       -       1       postscreen
 #smtpd     pass  -       -       y       -       -       smtpd
 #dnsblog   unix  -       -       y       -       0       dnsblog
 #tlsproxy  unix  -       -       y       -       0       tlsproxy
 submission inet n       -       y       -       -       smtpd
+  -o content_filter=
+  -o receive_override_options=no_milters
+  -o receive_override_options=no_header_body_checks
   -o syslog_name=postfix/submission
   -o smtpd_tls_security_level=encrypt
   -o smtpd_sasl_auth_enable=yes
   -o smtpd_recipient_restrictions=
   -o smtpd_helo_restrictions=
   -o smtpd_relay_restrictions=permit_sasl_authenticated,reject
-  -o milter_macro_daemon_name=ORIGINATING
+#  -o milter_macro_daemon_name=ORIGINATING
 #smtps     inet  n       -       y       -       -       smtpd
 #  -o syslog_name=postfix/smtps
 #  -o smtpd_tls_wrappermode=yes
@@ -36,6 +41,9 @@ submission inet n       -       y       -       -       smtpd
 #  -o milter_macro_daemon_name=ORIGINATING
 #628       inet  n       -       y       -       -       qmqpd
 pickup    unix  n       -       y       60      1       pickup
+         -o content_filter=
+         -o receive_override_options=no_header_body_checks
+
 cleanup   unix  n       -       y       -       0       cleanup
 qmgr      unix  n       -       n       300     1       qmgr
 #qmgr     unix  n       -       n       300     1       oqmgr
@@ -123,24 +131,51 @@ mailman   unix  -       n       n       -       -       pipe
 # ClamAV Settings
 #
 # AV scan filter (used by content_filter)
-scan unix - - n - 16 smtp
-  -o smtp_send_xforward_command=yes
+#scan unix - - n - 16 smtp
+#  -o smtp_send_xforward_command=yes
 # For injecting mail back into postfix from the filter
-127.0.0.1:10026 inet n - n - 16 smtpd
-  -o content_filter=
-  -o receive_override_options=no_unknown_recipient_checks,no_header_body_checks,no_milters
-  -o smtpd_helo_restrictions=
-  -o smtpd_client_restrictions=
-  -o smtpd_sender_restrictions=
-  -o smtpd_recipient_restrictions=permit_mynetworks,reject
-  -o mynetworks_style=host
-  -o smtpd_authorized_xforward_hosts=127.0.0.0/8
+#127.0.0.1:10026 inet n - n - 16 smtpd
+#  -o content_filter=
+#  -o receive_override_options=no_unknown_recipient_checks,no_header_body_checks,no_milters
+#  -o smtpd_helo_restrictions=
+#  -o smtpd_client_restrictions=
+#  -o smtpd_sender_restrictions=
+#  -o smtpd_recipient_restrictions=permit_mynetworks,reject
+#  -o mynetworks_style=host
+#  -o smtpd_authorized_xforward_hosts=127.0.0.0/8
 #
 # SPAM Assassin
 #
-spamassassin    unix    -       n       n       -       -       pipe
-  flags=R
-  user=spamd
-  argv=/usr/bin/spamc
-  -e /usr/sbin/sendmail
-  -oi -f ${sender} ${recipient}
+#spamassassin   unix    -       n       n       -       -       pipe
+#  flags=R
+#  user=spamd
+#  argv=/usr/bin/spamc
+#  -e /usr/sbin/sendmail
+#  -oi -f ${sender} ${recipient}
+#
+#  AMAVIS Config
+#smtp-amavis     unix    -       -       -       -       2       lmtp
+#        -o smtp_data_done_timeout=1200
+#        -o smtp_send_xforward_command=yes
+#        -o disable_dns_lookups=yes
+#        -o max_use=20
+
+127.0.0.1:10025 inet    n       -       -       -       -       smtpd
+        -o content_filter=
+        -o local_recipient_maps=
+        -o relay_recipient_maps=
+        -o smtpd_restriction_classes=
+        -o smtpd_delay_reject=no
+        -o smtpd_client_restrictions=permit_mynetworks,reject
+        -o smtpd_helo_restrictions=
+        -o smtpd_sender_restrictions=
+        -o smtpd_recipient_restrictions=permit_mynetworks,reject
+        -o smtpd_data_restrictions=reject_unauth_pipelining
+        -o smtpd_end_of_data_restrictions=
+        -o mynetworks=127.0.0.0/8
+        -o smtpd_error_sleep_time=0
+        -o smtpd_soft_error_limit=1001
+        -o smtpd_hard_error_limit=1000
+        -o smtpd_client_connection_count_limit=0
+        -o smtpd_client_connection_rate_limit=0
+        -o receive_override_options=no_header_body_checks,no_unknown_recipient_checks
