@@ -7,17 +7,35 @@ use strict;
 # See /usr/share/doc/amavisd-new/ for documentation and examples of
 # the directives you can use in this file
 #
-@local_domains_acl = ( "." );
+@local_domains_acl = ( "rachandcam.nz", "rachandcam.kiwi", "kiwicam.nz" );
 
 $sa_spam_subject_tag = '[SPAM] ';
 $sa_tag_level_deflt  = -999;  # add spam info headers if at, or above that level
 $sa_tag2_level_deflt = 4; # add 'spam detected' headers at that level
 $sa_kill_level_deflt = 12; # triggers spam evasive actions
 
+$enable_dkim_verification = 1;
+
+#DKIM Signing
+$enable_dkim_signing = 1;
+dkim_key('rachandcam.nz', 'mail', '/etc/opendkim/keys/rachandcam.nz.dkim.key');
+dkim_key('kiwicam.nz', 'mail', '/etc/opendkim/keys/kiwicam.nz.dkim.key');
+@dkim_signature_options_bysender_maps = ({
+        '.' => { d => 'rachandcam.nz', a => 'rsa-sha256', c => 'relaxed/simple', ttl => 21*24*3600},
+        'rachandcam.nz' => { d => 'rachandcam.nz', a => 'rsa-sha256', c => 'relaxed/simple', ttl => 21*24*300},
+        'kiwicam.nz' => { d => 'kiwicam.nz', a => 'rsa-sha256', c => 'relaxed/simple', ttl => 21*24*300}
+});
+
+$originating = 1; #We want to sign all messages
+
 $final_virus_destiny      = D_DISCARD;  # (data not lost, see virus quarantine)
 $final_banned_destiny     = D_REJECT;   # D_REJECT when front-end MTA
 $final_spam_destiny       = D_DISCARD;
 $final_bad_header_destiny = D_PASS;     # False-positive prone (for spam)
+
+#Logging
+# Enable Logging
+#$log_level = 5; # (defaults to 0)
 
 #------------ Do not modify anything below this line -------------
 1;  # ensure a defined return
