@@ -8,30 +8,57 @@ use strict;
 # the directives you can use in this file
 #
 @local_domains_acl = ( "rachandcam.nz", "rachandcam.kiwi", "kiwicam.nz" );
+@mynetworks = qw( 127.0.0.0/8 172.16.0.0/16 );
+$forward_method = 'smtp:[127.0.0.1]:20026';
+$inet_socket_port = [10024, 20026];
 
-$sa_spam_subject_tag = '[SPAM] ';
-$sa_tag_level_deflt  = -999;  # add spam info headers if at, or above that level
-$sa_tag2_level_deflt = 4; # add 'spam detected' headers at that level
-$sa_kill_level_deflt = 12; # triggers spam evasive actions
-
-$enable_dkim_verification = 1;
-
-#DKIM Signing
-$enable_dkim_signing = 1;
-dkim_key('rachandcam.nz', 'mail', '/etc/opendkim/keys/rachandcam.nz.dkim.key');
-dkim_key('kiwicam.nz', 'mail', '/etc/opendkim/keys/kiwicam.nz.dkim.key');
+#DKIM Configuration
+dkim_key('rachandcam.nz', 'mail', '/var/lib/dkim/rachandcam.nz.dkim.key');
+dkim_key('kiwicam.nz', 'mail', '/var/lib/dkim/kiwicam.nz.dkim.key');
 @dkim_signature_options_bysender_maps = ({
         '.' => { d => 'rachandcam.nz', a => 'rsa-sha256', c => 'relaxed/simple', ttl => 21*24*3600},
         'rachandcam.nz' => { d => 'rachandcam.nz', a => 'rsa-sha256', c => 'relaxed/simple', ttl => 21*24*300},
         'kiwicam.nz' => { d => 'kiwicam.nz', a => 'rsa-sha256', c => 'relaxed/simple', ttl => 21*24*300}
 });
 
-$originating = 1; #We want to sign all messages
+#Scan Defaults
+$sa_spam_subject_tag     = '[SPAM] ';
+$sa_tag_level_deflt      = -999;  # add spam info headers if at, or above that level
+$sa_tag2_level_deflt     = 4; # add 'spam detected' headers at that level
+$sa_kill_level_deflt     = 7; # triggers spam evasive actions
 
-$final_virus_destiny      = D_DISCARD;  # (data not lost, see virus quarantine)
-$final_banned_destiny     = D_REJECT;   # D_REJECT when front-end MTA
-$final_spam_destiny       = D_DISCARD;
-$final_bad_header_destiny = D_PASS;     # False-positive prone (for spam)
+#AMAVIS Incoming
+# Scan all incoming mail
+$interface_policy{'10024'} = 'INCOMING';
+
+$policy_bank{'INCOMING'} = {
+        enable_dkim_verification => 1,
+        originating => 0,
+
+        final_virus_destiny     => D_DISCARD,  # (data not lost, see virus quarantine)
+        final_banned_destiny    => D_REJECT,   # D_REJECT when front-end MTA
+        final_spam_destiny      => D_DISCARD,
+        final_bad_header_destiny => D_PASS     # False-positive prone (for spam)
+};
+
+#AMAVIS Outgoing
+# change this from the original setting
+#Forward all mail to outbound after scanning
+$interface_policy{'20026'} = 'OUTBOUND';
+
+$policy_bank{'OUTBOUND'} = {
+        # be slightly more permissive on spam levels for mail from our hosts:
+        spam_kill_level_maps => [12],
+        spam_tag2_level_maps => [6],
+        bypass_banned_checks_maps => 1,  # allow sending any file type or name
+        smtpd_greeting_banner => '${helo-name} ${protocol} ${product} Outbound Mail Forwarder',
+        remove_existing_x_scanned_headers => undef,
+        remove_existing_spam_headers => undef,
+        originating => 1,
+        enable_dkim_signing => 1,
+        forward_method => 'smtp:[127.0.0.1]:10025' # relay to Postfix reinject listener
+};
+
 
 #Logging
 # Enable Logging
