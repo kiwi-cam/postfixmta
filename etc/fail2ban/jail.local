@@ -1,32 +1,53 @@
 [DEFAULT]
-bantime  = 3600
+bantime  = 1h
+findtime = 12h
 
 sendername = Fail2Ban
-sender = fail2ban@mydomain.com
-destemail = alerts@mydomain.com
+sender = fail2ban@rachandcam.nz
+destemail = alerts@kiwicam.nz
 
 [sshd]
 enabled  = true
-maxretry = 3
+maxretry = 5
+findtime = 1d
 action = %(action_mw)s
 
 [postfix]
 enabled  = true
 logpath  = /var/log/mail.log
+#backend = systemd
 maxretry = 5
 action = %(action_mw)s
 
 [postfix-longterm]
-# Long term scanning for postfix 35 failed attempts in 3 days.
+# Long term scanning for postfix 20 failed attempts in 24 houts, ban for 3 days.
 enabled  = true
 filter   = postfix
 logpath  = /var/log/mail.log
-maxretry = 35
-findtime  = 259200
-bantime   = 259200
+#backend = systemd
+maxretry = 20
+findtime  = 2d
+bantime   = 1w
 action = %(action_mw)s
 
 [postfix-sasl]
+enabled  = true
+logpath  = /var/log/mail.log
+#backend = systemd
+maxretry  = 3
+action = %(action_mw)s
+
+[postfix-sasl-longterm]
+enabled  = true
+filter = postfix-sasl
+logpath  = /var/log/mail.log
+#backend = systemd
+maxretry = 10
+findtime  = 2d
+bantime   = 1w
+action = %(action_mw)s
+
+[courier-auth]
 enabled  = true
 logpath  = /var/log/mail.log
 maxretry  = 3
